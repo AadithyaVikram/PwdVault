@@ -43,20 +43,28 @@
         </StackPanel>
       </Border>
     </ScrollViewer>
-    <Grid Grid.Row="1" ColumnDefinitions="310,*" IsVisible="{Binding IsUnlocked}">
+    <Grid Grid.Row="1" ColumnDefinitions="350,*" IsVisible="{Binding IsUnlocked}">
       <Border Padding="20" Background="#131D2B" BorderBrush="#273448" BorderThickness="0,0,1,0">
         <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16" IsEnabled="{Binding CanEdit}">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Your entries" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
             <Button Grid.Column="1" Content="+ New" Click="NewEntryClicked" />
           </Grid>
-          <TextBox Grid.Row="1" Text="{Binding Search, Mode=TwoWay}" PlaceholderText="Search names or usernames" />
-          <ListBox Grid.Row="2" x:Name="EntryList" ItemsSource="{Binding Entries}" SelectionChanged="EntrySelected" Background="Transparent">
+          <TextBox Grid.Row="1" Text="{Binding Search, Mode=TwoWay}" PlaceholderText="Search names, websites or logins" />
+          <ListBox Grid.Row="2" x:Name="EntryList" ItemsSource="{Binding Entries}" SelectionChanged="EntrySelected" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              </Style>
+            </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <StackPanel Margin="4,9" Spacing="4">
-                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding Username}" Foreground="#A9B8CC" FontSize="12" TextTrimming="CharacterEllipsis" />
+                <StackPanel Margin="4,10" Spacing="6">
+                  <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                  <TextBlock Text="WEBSITE" Foreground="#A9B8CC" FontSize="10" />
+                  <TextBlock Text="{Binding Url}" Foreground="#82E2C2" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Url}" />
+                  <TextBlock Text="USERNAME / EMAIL" Foreground="#A9B8CC" FontSize="10" />
+                  <TextBlock Text="{Binding Username}" Foreground="#E4ECF7" FontSize="13" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Username}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -74,7 +82,7 @@
           <TextBlock Text="Save changes before switching entries or locking the vault." Foreground="#A9B8CC" TextWrapping="Wrap" FontSize="12" />
           <TextBlock Text="NAME" Classes="label" />
           <TextBox Text="{Binding EntryTitle, Mode=TwoWay}" MaxLength="256" PlaceholderText="e.g. Personal email" />
-          <TextBlock Text="USERNAME" Classes="label" />
+          <TextBlock Text="USERNAME / EMAIL" Classes="label" />
           <TextBox Text="{Binding Username, Mode=TwoWay}" MaxLength="4096" PlaceholderText="Username or email" />
           <TextBlock Text="PASSWORD" Classes="label" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">

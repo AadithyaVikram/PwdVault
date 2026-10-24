@@ -34,7 +34,7 @@ Windows 11 x64 is the initial development target. Other operating systems and ar
 ## Use
 
 1. Choose **Choose new location**, select a new .pwdvault filename, and enter and confirm a unique master passphrase of at least 12 characters. Several random words are preferable.
-2. Create and save entries. Search matches entry names and usernames.
+2. Create and save entries. The entry list shows the name, website, and associated username or email. Hover over a shortened value to see it in full. Search matches entry names, websites, and usernames or emails.
 3. Passwords are masked by default. Copying sets a 20-second expiry; a subsequent clipboard change is preserved, including a copy of identical text.
 4. Save an encrypted backup to a new filename and retain it separately from the active device.
 5. Lock manually or close the window to exit. The vault also locks after five minutes without input in the app, on Windows session lock/disconnect, and on suspend/resume.
