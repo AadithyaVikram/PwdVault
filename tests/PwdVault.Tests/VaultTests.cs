@@ -215,6 +215,34 @@ public sealed class VaultTests : IDisposable
     }
 
     [Fact]
+    public async Task EntryListIncludesWebsiteAndFindsWebsiteOrLoginWithoutExposingPasswords()
+    {
+        using (var created = VaultFile.Create(VaultPath, Passphrase)) created.SaveEntry(Example());
+        using var vm = new MainViewModel { VaultPath = VaultPath };
+        await vm.OpenAsync(Passphrase, create: false);
+        var summary = Assert.Single(vm.Entries);
+        Assert.Equal(Example().Title, summary.Title);
+        Assert.Equal(Example().Username, summary.Username);
+        Assert.Equal(Example().Url, summary.Url);
+        Assert.DoesNotContain(Example().Password, summary.ToString());
+        foreach (string search in new[] { "PRIVATE.EXAMPLE.COM", "PRIVATE-USER@", "account name" })
+        {
+            vm.Search = search;
+            Assert.Equal(summary, Assert.Single(vm.Entries));
+        }
+        vm.Search = "does-not-match";
+        Assert.Empty(vm.Entries);
+        vm.Search = "";
+        vm.Select(Assert.Single(vm.Entries));
+        Assert.Equal(Example().Url, vm.Url);
+        vm.Url = "https://updated.example.org";
+        await vm.SaveAsync();
+        Assert.Equal(vm.Url, Assert.Single(vm.Entries).Url);
+        vm.Lock();
+        Assert.Empty(vm.Entries);
+    }
+
+    [Fact]
     public void GeneratorEnforcesSelectedSetsAndRejectsInvalidOptions()
     {
         for (int i = 0; i < 30; i++)
