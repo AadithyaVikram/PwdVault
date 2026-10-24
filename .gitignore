@@ -1,0 +1,20 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+.tools/
+.dotnet-home/
+.nuget/
+artifacts/
+TestResults/
+*.user
+*.pwdvault
+*.pwdvault.*
+*.lock
+
+# Local credentials and signing material
+.env
+.env.*
+*.pfx
+*.p12
+*.key

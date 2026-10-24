@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <title>PwdVault</title>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="#151f2d"/>
+  <path d="M88 112V88a40 40 0 0 1 80 0v24" fill="none" stroke="#66d9b4" stroke-width="16" stroke-linecap="round"/>
+  <rect x="64" y="104" width="128" height="112" rx="24" fill="#66d9b4"/>
+  <circle cx="128" cy="148" r="13" fill="#151f2d"/>
+  <path d="M123 156h10l5 27h-20z" fill="#151f2d"/>
+</svg>

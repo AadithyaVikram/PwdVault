@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PwdVault.Core/PwdVault.Core.csproj" />
+    <Project Path="src/PwdVault.Desktop/PwdVault.Desktop.csproj" />
+    <Project Path="src/PwdVault.Platform.Windows/PwdVault.Platform.Windows.csproj" />
+    <Project Path="src/PwdVault.Security/PwdVault.Security.csproj" />
+    <Project Path="src/PwdVault.Storage/PwdVault.Storage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PwdVault.Tests/PwdVault.Tests.csproj" />
+  </Folder>
+</Solution>

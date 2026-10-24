@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="PwdVault.Desktop.MainWindow"
+        Icon="/Assets/pwdvault.ico" Title="PwdVault" Width="1100" Height="780" MinWidth="900" MinHeight="680"
+        Background="#101722" WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border Padding="28,20" Background="#151F2D" BorderBrush="#273448" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <Image Source="/Assets/logo.png" Width="52" Height="52" VerticalAlignment="Center" AutomationProperties.Name="PwdVault logo" />
+          <StackPanel Spacing="3">
+            <TextBlock Text="PwdVault" FontSize="25" FontWeight="SemiBold" />
+            <TextBlock Text="Your passwords. On your device." Foreground="#A9B8CC" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Border Background="#203B34" CornerRadius="12" Padding="12,5">
+            <TextBlock Text="OFFLINE" Foreground="#82E2C2" FontSize="11" FontWeight="SemiBold" />
+          </Border>
+          <Button Content="Lock vault" Click="LockClicked" IsVisible="{Binding IsUnlocked}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <ScrollViewer Grid.Row="1" IsVisible="{Binding IsLocked}">
+      <Border MaxWidth="540" Padding="32" Margin="24,40" Background="#182232" CornerRadius="14" VerticalAlignment="Center">
+        <StackPanel Spacing="16" IsEnabled="{Binding CanInteract}">
+          <TextBlock Text="A private place for your passwords" FontSize="25" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="Unlock an existing vault, or create your first one. Everything stays on this device." TextWrapping="Wrap" Foreground="#A9B8CC" />
+          <TextBlock Text="VAULT FILE" Classes="label" />
+          <TextBox Text="{Binding VaultPath, Mode=TwoWay}" PlaceholderText="Choose a .pwdvault file" IsReadOnly="True" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Button Content="Choose existing vault" Click="ChooseClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+            <Button Grid.Column="1" Content="Choose new location" Click="NewLocationClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          </Grid>
+          <TextBlock Text="MASTER PASSPHRASE" Classes="label" />
+          <TextBox x:Name="MasterInput" PasswordChar="●" MaxLength="1024" PlaceholderText="Enter your master passphrase" />
+          <StackPanel x:Name="ConfirmationPanel" Spacing="10" IsVisible="False">
+            <TextBlock Text="CONFIRM MASTER PASSPHRASE" Classes="label" />
+            <TextBox x:Name="ConfirmInput" PasswordChar="●" MaxLength="1024" PlaceholderText="Enter it again" />
+            <TextBlock Text="Use at least 12 characters, ideally several random words. If you forget this passphrase, your vault cannot be recovered." TextWrapping="Wrap" Foreground="#E4BE85" FontSize="12" />
+          </StackPanel>
+          <Button x:Name="UnlockButton" Content="Unlock vault" Classes="primary" Click="UnlockClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+    <Grid Grid.Row="1" ColumnDefinitions="310,*" IsVisible="{Binding IsUnlocked}">
+      <Border Padding="20" Background="#131D2B" BorderBrush="#273448" BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16" IsEnabled="{Binding CanEdit}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Your entries" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="+ New" Click="NewEntryClicked" />
+          </Grid>
+          <TextBox Grid.Row="1" Text="{Binding Search, Mode=TwoWay}" PlaceholderText="Search names or usernames" />
+          <ListBox Grid.Row="2" x:Name="EntryList" ItemsSource="{Binding Entries}" SelectionChanged="EntrySelected" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Margin="4,9" Spacing="4">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Username}" Foreground="#A9B8CC" FontSize="12" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel Grid.Row="3" Spacing="8">
+            <Button Content="Save encrypted backup" Click="BackupClicked" HorizontalAlignment="Stretch" />
+            <Button Content="Restore a backup" Click="RestoreClicked" HorizontalAlignment="Stretch" />
+            <Button Content="Change master passphrase" Click="ChangePassphraseClicked" HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </Grid>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Margin="32,24" Spacing="12" MaxWidth="700" IsEnabled="{Binding CanEdit}">
+          <TextBlock Text="Entry details" FontSize="24" FontWeight="SemiBold" />
+          <TextBlock Text="Save changes before switching entries or locking the vault." Foreground="#A9B8CC" TextWrapping="Wrap" FontSize="12" />
+          <TextBlock Text="NAME" Classes="label" />
+          <TextBox Text="{Binding EntryTitle, Mode=TwoWay}" MaxLength="256" PlaceholderText="e.g. Personal email" />
+          <TextBlock Text="USERNAME" Classes="label" />
+          <TextBox Text="{Binding Username, Mode=TwoWay}" MaxLength="4096" PlaceholderText="Username or email" />
+          <TextBlock Text="PASSWORD" Classes="label" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBox Text="{Binding Password, Mode=TwoWay}" PasswordChar="{Binding PasswordMask}" MaxLength="4096" PlaceholderText="Password" />
+            <Button Grid.Column="1" Content="Copy" Click="CopyClicked" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="18">
+            <CheckBox Content="Show password" IsChecked="{Binding Reveal, Mode=TwoWay}" />
+            <Button Content="Generate password" Click="GenerateClicked" />
+          </StackPanel>
+          <TextBlock Text="WEBSITE" Classes="label" />
+          <TextBox Text="{Binding Url, Mode=TwoWay}" MaxLength="4096" PlaceholderText="https://example.com" />
+          <TextBlock Text="NOTES" Classes="label" />
+          <TextBox Text="{Binding Notes, Mode=TwoWay}" MaxLength="65536" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="200" PlaceholderText="Optional notes" />
+          <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+            <Button Content="Save entry" Classes="primary" Click="SaveClicked" HorizontalAlignment="Left" />
+            <Button Grid.Column="1" Content="Delete entry" Click="DeleteClicked" IsVisible="{Binding IsExistingEntry}" />
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <Border Grid.Row="2" Background="#151F2D" Padding="24,14" BorderBrush="#273448" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <ProgressBar Width="38" Height="4" IsIndeterminate="True" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Status}" Foreground="#B6C6D9" TextWrapping="Wrap" FontSize="12" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
