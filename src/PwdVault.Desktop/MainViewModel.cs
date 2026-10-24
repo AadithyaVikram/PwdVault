@@ -7,7 +7,7 @@ using PwdVault.Storage;
 
 namespace PwdVault.Desktop;
 
-public sealed record EntrySummary(Guid Id, string Title, string Username);
+public sealed record EntrySummary(Guid Id, string Title, string Username, string Url);
 
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
@@ -147,9 +147,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (!IsUnlocked) return;
         foreach (var e in _vault!.Session.Entries
             .Where(e => e.Title.Contains(Search, StringComparison.OrdinalIgnoreCase) ||
-                e.Username.Contains(Search, StringComparison.OrdinalIgnoreCase))
+                e.Username.Contains(Search, StringComparison.OrdinalIgnoreCase) ||
+                e.Url.Contains(Search, StringComparison.OrdinalIgnoreCase))
             .OrderBy(e => e.Title, StringComparer.OrdinalIgnoreCase))
-            Entries.Add(new EntrySummary(e.Id, e.Title, e.Username));
+            Entries.Add(new EntrySummary(e.Id, e.Title, e.Username, e.Url));
     }
 
     private void NotifyState()
