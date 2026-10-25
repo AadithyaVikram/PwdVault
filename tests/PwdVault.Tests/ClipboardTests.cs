@@ -71,12 +71,36 @@ public sealed class ClipboardTests
         Assert.False(api.IsOpen);
     }
 
+    [Fact]
+    public void FailedClipboardOverwriteRetainsCleanupOfThePreviousCopy()
+    {
+        var api = new FakeClipboard();
+        var clipboard = new WindowsClipboard(42, api);
+        clipboard.CopyPassword("previous synthetic secret");
+        api.FailEmpty = true;
+        Assert.Throws<IOException>(() => clipboard.CopyPassword("replacement"));
+        api.FailEmpty = false;
+        Assert.Equal(ClipboardClearResult.Cleared, clipboard.ClearOwnedPassword());
+    }
+
+    [Fact]
+    public void NullCharactersAndMalformedUnicodeAreRejectedBeforeChangingTheClipboard()
+    {
+        var api = new FakeClipboard();
+        var clipboard = new WindowsClipboard(42, api);
+        clipboard.CopyPassword("previous synthetic secret");
+        Assert.Throws<ArgumentException>(() => clipboard.CopyPassword("truncated\0secret"));
+        Assert.ThrowsAny<ArgumentException>(() => clipboard.CopyPassword("invalid " + '\ud800'));
+        Assert.False(api.IsOpen);
+        Assert.Equal(ClipboardClearResult.Cleared, clipboard.ClearOwnedPassword());
+    }
     private sealed class FakeClipboard : IWindowsClipboardApi
     {
         public Dictionary<string, uint> Formats { get; } = [];
         public Dictionary<uint, byte[]> Data { get; } = [];
         public List<string> WriteOrder { get; } = [];
         public bool Busy { get; set; }
+        public bool FailEmpty { get; set; }
         public bool IsOpen { get; private set; }
         public int FailOnWrite { get; init; } = -1;
         public nint Owner { get; private set; }
@@ -99,6 +123,7 @@ public sealed class ClipboardTests
         public bool Empty()
         {
             Assert.True(IsOpen);
+            if (FailEmpty) return false;
             Owner = _opener; Data.Clear(); Sequence++; return true;
         }
         public void Put(uint format, byte[] bytes)

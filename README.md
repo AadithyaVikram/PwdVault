@@ -2,13 +2,13 @@
 
 An offline Windows password vault built with C#/.NET 10 and Avalonia 12. The vault engine and file format are separate from the desktop UI and Windows integrations so future desktop ports can reuse them.
 
-This is a development MVP, not an audited password manager.
+This is a development MVP, not an audited password manager. See [production-readiness evidence and remaining release gates](docs/PRODUCTION_READINESS.md).
 
 ## Open normally on Windows
 
 After local installation, double-click **PwdVault** on the Desktop or search for **PwdVault** in the Start menu. These shortcuts launch the installed executable directly, with no terminal window. The self-contained build includes its .NET runtime.
 
-The per-user installation lives in `%LOCALAPPDATA%\Programs\PwdVault`. Your vault files stay in the locations you chose; installation does not move them. This does not enable automatic startup when Windows starts.
+The per-user installation root is `%LOCALAPPDATA%\Programs\PwdVault`; verified app versions live under `apps/<content-id>`, and shortcuts select the active version. Your vault files stay in the locations you chose; installation does not move them. This does not enable automatic startup when Windows starts.
 
 To install or update from source, publish the Windows build using the command below, close any installed PwdVault window, then run:
 
@@ -16,7 +16,7 @@ To install or update from source, publish the Windows build using the command be
 .\scripts\Install-Local.ps1
 ```
 
-The script copies the published app to the current user's Programs directory and creates Desktop and Start menu shortcuts. A system-wide installer, code signing, and automatic updates remain future work.
+The installer stages and verifies a complete package before switching Desktop and Start menu shortcuts. Retained versioned builds support `scripts/Rollback-Local.ps1`; `scripts/Uninstall-Local.ps1` removes only unchanged managed app files and preserves vaults and unknown files. Legacy files from the earlier installer are retained. Code signing and automatic updates remain future work.
 
 ## Run from source
 
@@ -73,6 +73,8 @@ After publishing, run `scripts/Install-Local.ps1` to install this build for your
 
 The original vector logo is in `src/PwdVault.Desktop/Assets/logo.svg`. Run `scripts/Generate-Icon.ps1` on Windows to regenerate the PNG and multi-resolution ICO exports. The icon is embedded in the executable and displayed in the window and application header.
 
+Run `scripts/Validate-Release.ps1` for build/test/audit/deployment validation and an unsigned Windows publish. The prepared GitHub workflow runs the same checks when pushed. Detailed results, limits, and manual acceptance steps are in [the readiness report](docs/PRODUCTION_READINESS.md).
+
 See [the project plan](PROJECT_PLAN.md) and [vault format specification](docs/VAULT_FORMAT.md).
 
 ## Security and verification limits
@@ -95,3 +97,5 @@ The optional scripts/Smoke-Test.ps1 script briefly starts a separate app instanc
 On 24 October 2026: Release build succeeded with zero warnings; 27 automated tests passed; Windows UI Automation startup checks passed; the initial window capture was visually inspected. Native clipboard history/sync exclusion, real session lock/suspend, and the remaining release checks above are still pending.
 
 The self-contained Windows build has also been installed locally with Desktop and Start menu shortcuts. Its logo appears in the application header, title bar, and executable icon. The updated window passed the startup UI check, and the installed build was verified in a normal visible launch.
+
+On 25 October 2026, local hardening expanded the C# suite to 45 tests, added subprocess save-interruption and disk-full simulations, and tested versioned installation, rollback, and safe uninstall. Native clipboard validation was blocked by Windows error 5; interactive clipboard/session/power checks and independent review remain open. See the readiness report for precise evidence and limitations.

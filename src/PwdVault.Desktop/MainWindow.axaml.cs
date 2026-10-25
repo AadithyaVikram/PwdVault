@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -15,8 +14,7 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private IPlatformSecurity? _platform;
-    private long _lastActivity = Stopwatch.GetTimestamp();
-    private long? _copiedAt;
+    private readonly SecurityTimeouts _timeouts = new();
     private bool _create;
     private bool _closeWhenIdle;
     private Window? _dialog;
@@ -57,13 +55,13 @@ public partial class MainWindow : Window
         _timer.Start();
     }
 
-    private void Activity(object? sender, RoutedEventArgs e) => _lastActivity = Stopwatch.GetTimestamp();
+    private void Activity(object? sender, RoutedEventArgs e) => _timeouts.RecordActivity();
     private void OnPlatformLock() => Dispatcher.UIThread.Post(LockVault, DispatcherPriority.Send);
 
     private void Tick()
     {
-        if (_vm.IsUnlocked && Stopwatch.GetElapsedTime(_lastActivity) >= TimeSpan.FromMinutes(5)) LockVault();
-        if (_copiedAt is long copied && Stopwatch.GetElapsedTime(copied) >= TimeSpan.FromSeconds(20))
+        if (_timeouts.ShouldLock) LockVault();
+        if (_timeouts.ShouldClearCopy)
             ClearClipboard();
         if (_closeWhenIdle && !_vm.IsBusy) Close();
     }
@@ -74,7 +72,7 @@ public partial class MainWindow : Window
         MasterInput.Text = ConfirmInput.Text = "";
         _vm.Lock();
         ClearClipboard();
-        _lastActivity = Stopwatch.GetTimestamp();
+        _timeouts.RecordActivity();
     }
 
     private void ClearClipboard()
@@ -83,12 +81,12 @@ public partial class MainWindow : Window
         var result = _platform.ClearOwnedPassword();
         if (result == ClipboardClearResult.Busy)
         {
-            _copiedAt = Stopwatch.GetTimestamp() - (long)(Stopwatch.Frequency * 21);
+            _timeouts.RetryClear();
             _vm.Status = "Vault locked or copy expired, but the clipboard is busy. Clearing will be retried while the app is open.";
         }
         else
         {
-            _copiedAt = null;
+            _timeouts.ForgetCopy();
             if (result == ClipboardClearResult.Cleared) _vm.Status = _vm.IsUnlocked ? "Copied password cleared." : "Vault locked. Copied password cleared.";
         }
     }
@@ -119,7 +117,7 @@ public partial class MainWindow : Window
         if (_create && passphrase != (ConfirmInput.Text ?? "")) { _vm.Status = "The passphrases do not match."; return; }
         MasterInput.Text = ConfirmInput.Text = "";
         await _vm.OpenAsync(passphrase, _create);
-        _lastActivity = Stopwatch.GetTimestamp();
+        _timeouts.RecordActivity();
         if (_vm.IsUnlocked) { _create = false; ConfirmationPanel.IsVisible = false; UnlockButton.Content = "Unlock vault"; }
     }
 
@@ -140,9 +138,10 @@ public partial class MainWindow : Window
         try
         {
             _platform.CopyPassword(_vm.Password);
-            _copiedAt = Stopwatch.GetTimestamp();
+            _timeouts.RecordCopy();
             _vm.Status = "Password copied. It will clear in 20 seconds if the clipboard stays unchanged.";
         }
+        catch (ArgumentException ex) { _vm.Status = ex.Message; }
         catch { _vm.Status = "Could not copy the password. The clipboard may be busy; try again."; }
     }
 

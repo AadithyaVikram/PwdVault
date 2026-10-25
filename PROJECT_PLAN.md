@@ -89,3 +89,7 @@ On explicit lock or exit, attempt to clear a still-owned password copy immediate
 - OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 
 Current API and dependency documentation must be checked during implementation; these references do not substitute for review of the complete application.
+
+## Local hardening status (25 October 2026)
+
+A developer security/recovery pass expanded verification to 45 passing tests, added simulated disk-full and subprocess interruption checks, and introduced versioned install/rollback/uninstall tooling and a prepared CI workflow. The hardened development build is installed locally. Production approval remains withheld; see [the readiness report](docs/PRODUCTION_READINESS.md) for evidence and open native Windows, clean-machine, signing, and independent-review gates.

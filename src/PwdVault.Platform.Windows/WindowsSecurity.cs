@@ -15,7 +15,8 @@ public sealed class WindowsSecurity : IPlatformSecurity
     {
         _clipboard = new WindowsClipboard(window, new Win32ClipboardApi());
         SystemEvents.SessionSwitch += OnSessionSwitch;
-        SystemEvents.PowerModeChanged += OnPowerChanged;
+        try { SystemEvents.PowerModeChanged += OnPowerChanged; }
+        catch { SystemEvents.SessionSwitch -= OnSessionSwitch; throw; }
     }
 
     public void CopyPassword(string password)
