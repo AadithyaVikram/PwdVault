@@ -73,7 +73,7 @@ After publishing, run `scripts/Install-Local.ps1` to install this build for your
 
 The original vector logo is in `src/PwdVault.Desktop/Assets/logo.svg`. Run `scripts/Generate-Icon.ps1` on Windows to regenerate the PNG and multi-resolution ICO exports. The icon is embedded in the executable and displayed in the window and application header.
 
-Run `scripts/Validate-Release.ps1` for build/test/audit/deployment validation and an unsigned Windows publish. The prepared GitHub workflow runs the same checks when pushed. Detailed results, limits, and manual acceptance steps are in [the readiness report](docs/PRODUCTION_READINESS.md).
+Run `scripts/Validate-Release.ps1` for build/test/audit/deployment validation and an unsigned Windows publish. The GitHub workflow runs the same checks on dev/main pushes and pull requests. The [first Windows hardening validation passed](https://github.com/AadithyaVikram/PwdVault/actions/runs/40188974199). Detailed results, limits, and manual acceptance steps are in [the readiness report](docs/PRODUCTION_READINESS.md).
 
 See [the project plan](PROJECT_PLAN.md) and [vault format specification](docs/VAULT_FORMAT.md).
 

@@ -32,7 +32,7 @@ The vault format remains version 1. Files written by the app with valid passphra
 | Synthetic unlock benchmark | 167.3, 173.3, and 167.8 ms on this computer | Provisional 64 MiB / 3-pass / 1-lane configuration; not minimum-hardware qualification |
 | Installed hardened build | Startup check passed | Versioned package verified and Desktop/Start menu shortcuts updated; personal vaults left untouched |
 | Windows signature | NotSigned | Confirmed with Get-AuthenticodeSignature; no claim of publisher authentication |
-| Hosted CI | Workflow prepared, not yet run on GitHub | The workflow pins action commits, restores locked dependencies, runs tests, audits dependencies, and publishes an unsigned build |
+| Hosted CI | [Passed on the GitHub Windows runner](https://github.com/AadithyaVikram/PwdVault/actions/runs/40188974199) for commit 9138e12 | Locked restore, build, 45 tests, dependency audit, deployment recovery checks, and unsigned publish passed; interactive acceptance remains separate |
 | Independent review and signing | Not completed | External release gates remain open |
 
 Local artifacts are under artifacts/hardening and are ignored by Git. The TRX result and dependency-audit JSON are machine-generated evidence. SHA256SUMS.txt describes the published files. Installer tests retain their synthetic evidence under artifacts/deployment-tests.
