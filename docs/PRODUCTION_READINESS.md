@@ -21,7 +21,7 @@ The vault format remains version 1. Files written by the app with valid passphra
 
 | Check | Local result | What this establishes |
 | --- | --- | --- |
-| Automated C# suite | 45 tests passed | Includes existing tests and new hardening/recovery tests |
+| Automated C# suite | 49 tests passed | Includes existing tests and new hardening/recovery tests |
 | Argon2id known-answer test | Passed | Library result matches RFC 9106 section 5.3; not a review of every cryptographic path |
 | Invalid and authenticated malformed inputs | Passed | Bounded random files, oversize inputs, missing fields, null entries, and invalid identifiers are rejected |
 | Partial disk-full write simulation | Passed | Injected partial-write failure preserves the prior vault and passphrase/session |
@@ -104,3 +104,9 @@ References:
 - [Argon2id known-answer vector](https://www.rfc-editor.org/rfc/rfc9106#section-5.3)
 - [Windows window stations and desktops](https://learn.microsoft.com/en-us/windows/win32/winstation/about-window-stations-and-desktops)
 - [Windows clipboard exclusion formats](https://learn.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats#cloud-clipboard-and-clipboard-history-formats)
+
+## Crash-test synchronization follow-up
+
+Later GitHub runs exposed a post-termination sharing violation when the recovery test immediately reopened its synthetic vault. The test now confirms the live worker holds the lease, terminates and awaits the worker, and retries only Windows sharing/lock violations (codes 32/33) for at most five seconds. Persistent locks still fail; missing files, authentication failures, and other exceptions are not retried. Decryption, expected-entry counts, and previous-copy integrity assertions remain in place. Production vault locking behavior is unchanged.
+
+The local suite now has 49 passing tests. The four process-kill cases also passed three additional focused runs. The original hosted pass above records the initial hardening commit; consult the latest GitHub validation run for the current branch's result.

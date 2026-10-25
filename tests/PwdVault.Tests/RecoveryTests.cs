@@ -83,9 +83,15 @@ public sealed class RecoveryTests : IDisposable
             while (!File.Exists(ready) && !process.HasExited && Stopwatch.GetElapsedTime(began) < TimeSpan.FromSeconds(30))
                 await Task.Delay(25);
             Assert.True(File.Exists(ready), "Child did not reach the selected save checkpoint.");
+            // Prove the live writer owns the lease before terminating it.
+            var held = Assert.Throws<IOException>(() => VaultFile.Open(VaultPath, Passphrase));
+            Assert.True(IsSharingViolation(held));
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync();
-            using var reopened = VaultFile.Open(VaultPath, Passphrase); // also proves the lease was released.
+            Assert.True(process.HasExited);
+            // Windows can report process exit before outstanding handle cleanup is observable.
+            // Only transient sharing errors are retried; all decryption/integrity assertions remain below.
+            using var reopened = await OpenAfterTerminationAsync(() => VaultFile.Open(VaultPath, Passphrase), TimeSpan.FromSeconds(5));
             Assert.Contains(reopened.Session.Entries, e => e.Title == "original");
             Assert.Equal(committed ? 2 : 1, reopened.Session.Entries.Count);
             if (committed)
@@ -100,6 +106,68 @@ public sealed class RecoveryTests : IDisposable
         }
     }
 
+    private static bool IsSharingViolation(IOException error) => (error.HResult & 0xffff) is 32 or 33;
+
+    private static async Task<VaultFile> OpenAfterTerminationAsync(Func<VaultFile> open, TimeSpan timeout)
+    {
+        long started = Stopwatch.GetTimestamp();
+        while (true)
+        {
+            try { return open(); }
+            catch (IOException error) when (IsSharingViolation(error))
+            {
+                if (Stopwatch.GetElapsedTime(started) >= timeout)
+                    throw new TimeoutException("The terminated recovery worker's vault remained locked beyond the cleanup deadline.", error);
+                await Task.Delay(25);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task PostTerminationOpenRetriesTransientSharingErrors()
+    {
+        int attempts = 0;
+        using var opened = await OpenAfterTerminationAsync(() =>
+        {
+            if (++attempts < 3) throw new IOException("Synthetic sharing violation.", unchecked((int)0x80070020));
+            return VaultFile.Open(VaultPath, Passphrase);
+        }, TimeSpan.FromSeconds(5));
+        Assert.Equal(3, attempts);
+        Assert.Equal("original", Assert.Single(opened.Session.Entries).Title);
+    }
+
+    [Fact]
+    public async Task PostTerminationOpenFailsWhenTheLeaseRemainsHeld()
+    {
+        using var holder = VaultFile.Open(VaultPath, Passphrase);
+        var error = await Assert.ThrowsAsync<TimeoutException>(() => OpenAfterTerminationAsync(
+            () => VaultFile.Open(VaultPath, Passphrase), TimeSpan.FromMilliseconds(100)));
+        Assert.True(IsSharingViolation(Assert.IsType<IOException>(error.InnerException)));
+    }
+
+    [Fact]
+    public async Task PostTerminationOpenDoesNotRetryUnrelatedIoFailures()
+    {
+        int attempts = 0;
+        await Assert.ThrowsAsync<FileNotFoundException>(() => OpenAfterTerminationAsync(() =>
+        {
+            attempts++;
+            throw new FileNotFoundException("Synthetic missing vault.");
+        }, TimeSpan.FromSeconds(5)));
+        Assert.Equal(1, attempts);
+    }
+
+    [Fact]
+    public async Task PostTerminationOpenDoesNotRetryAuthenticationFailures()
+    {
+        int attempts = 0;
+        await Assert.ThrowsAsync<VaultUnlockException>(() => OpenAfterTerminationAsync(() =>
+        {
+            attempts++;
+            throw new VaultUnlockException();
+        }, TimeSpan.FromSeconds(5)));
+        Assert.Equal(1, attempts);
+    }
     private sealed class DiskFullStream(string path) : Stream
     {
         private readonly FileStream _file = new(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
