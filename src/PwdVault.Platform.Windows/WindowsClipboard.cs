@@ -37,11 +37,17 @@ public sealed class WindowsClipboard
 
     public void CopyPassword(string password)
     {
-        if (!_api.Open(_window)) throw new IOException("Clipboard is busy. Try copying again.");
-        byte[] text = Encoding.Unicode.GetBytes(password + "\0");
+        ArgumentNullException.ThrowIfNull(password);
+        if (password.Contains('\0')) throw new ArgumentException("Passwords containing a null character cannot be copied safely.");
+        byte[] text = new UnicodeEncoding(false, false, true).GetBytes(password + "\0");
+        bool opened = false;
+        bool emptied = false;
         try
         {
+            if (!_api.Open(_window)) throw new IOException("Clipboard is busy. Try copying again.");
+            opened = true;
             if (!_api.Empty()) throw new IOException("Could not empty the clipboard.");
+            emptied = true;
             _marker = null;
             // Exclusion flags are installed before text becomes available.
             _api.Put(_excludeFormat, [0, 0, 0, 0]);
@@ -53,8 +59,8 @@ public sealed class WindowsClipboard
             _marker = marker;
             _sequence = _api.Sequence;
         }
-        catch { _api.Empty(); _marker = null; throw; }
-        finally { CryptographicOperations.ZeroMemory(text); _api.Close(); }
+        catch { if (opened && emptied) { _api.Empty(); _marker = null; } throw; }
+        finally { CryptographicOperations.ZeroMemory(text); if (opened) _api.Close(); }
     }
 
     public ClipboardClearResult ClearOwnedPassword()

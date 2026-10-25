@@ -10,13 +10,16 @@ public sealed class VaultFile : IDisposable
     public string FilePath { get; }
     public VaultSession Session { get; private set; }
     private readonly FileStream _lease;
+    private readonly AtomicFileWriter _writer;
     private byte[] _lastHash;
     private bool _disposed;
 
-    private VaultFile(string path, FileStream lease, VaultSession session, byte[] lastBytes)
-    { FilePath = path; _lease = lease; Session = session; _lastHash = SHA256.HashData(lastBytes); }
+    private VaultFile(string path, FileStream lease, VaultSession session, byte[] lastBytes, AtomicFileWriter writer)
+    { FilePath = path; _lease = lease; Session = session; _lastHash = SHA256.HashData(lastBytes); _writer = writer; }
 
-    public static VaultFile Create(string path, string passphrase)
+    public static VaultFile Create(string path, string passphrase) => Create(path, passphrase, new AtomicFileWriter());
+
+    internal static VaultFile Create(string path, string passphrase, AtomicFileWriter writer)
     {
         path = Path.GetFullPath(path);
         var lease = Acquire(path);
@@ -26,20 +29,22 @@ public sealed class VaultFile : IDisposable
             if (File.Exists(path)) throw new IOException("A vault already exists at this location. Choose another filename.");
             session = VaultCodec.Create(passphrase);
             byte[] bytes = session.Encrypt();
-            AtomicWrite(path, bytes, create: true);
-            return new VaultFile(path, lease, session, bytes);
+            writer.Write(path, bytes, create: true);
+            return new VaultFile(path, lease, session, bytes, writer);
         }
         catch { session?.Dispose(); lease.Dispose(); throw; }
     }
 
-    public static VaultFile Open(string path, string passphrase)
+    public static VaultFile Open(string path, string passphrase) => Open(path, passphrase, new AtomicFileWriter());
+
+    internal static VaultFile Open(string path, string passphrase, AtomicFileWriter writer)
     {
         path = Path.GetFullPath(path);
         var lease = Acquire(path);
         try
         {
             byte[] bytes = ReadBounded(path);
-            return new VaultFile(path, lease, VaultCodec.Unlock(bytes, passphrase), bytes);
+            return new VaultFile(path, lease, VaultCodec.Unlock(bytes, passphrase), bytes, writer);
         }
         catch { lease.Dispose(); throw; }
     }
@@ -80,7 +85,7 @@ public sealed class VaultFile : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         CheckUnchanged();
         // Never overwrite an arbitrary existing file, backup, or another live vault.
-        AtomicWrite(Path.GetFullPath(destination), Session.Encrypt(), create: true);
+        _writer.Write(Path.GetFullPath(destination), Session.Encrypt(), create: true);
     }
 
     public void Restore(string source, string backupPassphrase)
@@ -94,8 +99,8 @@ public sealed class VaultFile : IDisposable
         {
             CheckUnchanged();
             // Keep a uniquely named copy before replacing the active vault.
-            AtomicWrite(FilePath + ".before-restore-" + Guid.NewGuid().ToString("N") + ".pwdvault", ReadBounded(FilePath), create: true);
-            AtomicWrite(FilePath, backup, create: false);
+            _writer.Write(FilePath + ".before-restore-" + Guid.NewGuid().ToString("N") + ".pwdvault", ReadBounded(FilePath), create: true);
+            _writer.Write(FilePath, backup, create: false);
             _lastHash = SHA256.HashData(backup);
             Session.Dispose();
             Session = restored;
@@ -108,7 +113,7 @@ public sealed class VaultFile : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         CheckUnchanged();
         byte[] bytes = Session.Encrypt();
-        AtomicWrite(FilePath, bytes, create: false);
+        _writer.Write(FilePath, bytes, create: false);
         _lastHash = SHA256.HashData(bytes);
     }
 
@@ -128,20 +133,6 @@ public sealed class VaultFile : IDisposable
         byte[] bytes = new byte[checked((int)stream.Length)];
         stream.ReadExactly(bytes);
         return bytes;
-    }
-
-    private static void AtomicWrite(string path, byte[] bytes, bool create)
-    {
-        string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
-        {
-            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                4096, FileOptions.WriteThrough))
-            { stream.Write(bytes); stream.Flush(flushToDisk: true); }
-            if (create) File.Move(temp, path, overwrite: false);
-            else File.Replace(temp, path, path + ".previous", ignoreMetadataErrors: false);
-        }
-        finally { if (File.Exists(temp)) File.Delete(temp); }
     }
 
     public void Dispose()

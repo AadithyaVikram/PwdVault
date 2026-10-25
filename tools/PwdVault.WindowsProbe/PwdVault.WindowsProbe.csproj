@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/PwdVault.Platform.Windows/PwdVault.Platform.Windows.csproj" />
+    <ProjectReference Include="../../src/PwdVault.Security/PwdVault.Security.csproj" />
+  </ItemGroup>
+</Project>

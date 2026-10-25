@@ -16,6 +16,7 @@ public static class VaultCodec
     public const int PayloadOffset = 136;
     public const int MaxPayloadLength = 8 * 1024 * 1024;
     public const int MaxFileLength = PayloadOffset + MaxPayloadLength + 16;
+    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
     private static readonly byte[] Magic = "PWDVLT01"u8.ToArray();
     private static readonly JsonSerializerOptions JsonOptions = new() { MaxDepth = 8 };
 
@@ -105,7 +106,9 @@ public static class VaultCodec
     private static byte[] Derive(string passphrase, byte[] header)
     {
         if (passphrase.Length > 1024) throw new ArgumentException("Passphrase exceeds 1024 characters.");
-        byte[] password = Encoding.UTF8.GetBytes(passphrase);
+        byte[] password;
+        try { password = StrictUtf8.GetBytes(passphrase); }
+        catch (EncoderFallbackException) { throw new ArgumentException("The passphrase contains an invalid Unicode character."); }
         try
         {
             using var argon = new Argon2id(password)

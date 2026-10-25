@@ -1,12 +1,20 @@
+using System.Text.Json.Serialization;
+
 namespace PwdVault.Core;
 
 public sealed record VaultEntry
 {
+    [JsonRequired]
     public Guid Id { get; init; } = Guid.NewGuid();
+    [JsonRequired]
     public string Title { get; init; } = "";
+    [JsonRequired]
     public string Username { get; init; } = "";
+    [JsonRequired]
     public string Password { get; init; } = "";
+    [JsonRequired]
     public string Url { get; init; } = "";
+    [JsonRequired]
     public string Notes { get; init; } = "";
 
     public void Validate()

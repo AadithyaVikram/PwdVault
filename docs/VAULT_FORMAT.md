@@ -20,9 +20,9 @@ All integers are signed 32-bit little-endian values. Lengths and resource parame
 | 136 | N | Encrypted UTF-8 JSON entry array |
 | 136 + N | 16 | Payload authentication tag |
 
-The key-encryption key is the 32-byte Argon2id output from the UTF-8 passphrase, without trimming or Unicode normalization. The wrapped data key uses bytes 0 through 59 as its AES-GCM associated data. The payload uses bytes 0 through 135 as its AES-GCM associated data. Each nonce is independently generated using the OS cryptographic random source.
+The key-encryption key is the 32-byte Argon2id output from the UTF-8 passphrase, without trimming or Unicode normalization. Malformed Unicode passphrases are rejected rather than replacement-encoded. The wrapped data key uses bytes 0 through 59 as its AES-GCM associated data. The payload uses bytes 0 through 135 as its AES-GCM associated data. Each nonce is independently generated using the OS cryptographic random source.
 
-The file must end exactly after the payload tag. The encrypted payload is limited to 8 MiB, 10,000 entries, and JSON depth 8. Each entry contains Id, Title, Username, Password, Url, and Notes. Entry identifiers must be nonempty and unique; title length is 1 to 256 (not whitespace only), username/password/URL at most 4,096 characters each, and notes at most 65,536 characters. Character counts are .NET UTF-16 code-unit counts.
+The file must end exactly after the payload tag. The encrypted payload is limited to 8 MiB, 10,000 entries, and JSON depth 8. Each entry must contain Id, Title, Username, Password, Url, and Notes; optional fields use empty strings rather than missing properties. Entry identifiers must be nonempty and unique; title length is 1 to 256 (not whitespace only), username/password/URL at most 4,096 characters each, and notes at most 65,536 characters. Character counts are .NET UTF-16 code-unit counts.
 
 Accepted Argon2 inputs are memory 19,456 to 262,144 KiB, iterations 2 to 10, parallelism 1 to 4, and memory times iterations at most 786,432 KiB-passes. These bounds mitigate malicious resource requests; they do not make weak master passphrases safe. The initial 64 MiB / 3 / 1 settings are provisional, not a hardware calibration system. Unlock timing must be assessed on minimum supported hardware before release.
 
