@@ -35,7 +35,7 @@ Windows 11 x64 is the initial development target. Other operating systems and ar
 
 1. Choose **Choose new location**, select a new .pwdvault filename, and enter and confirm a unique master passphrase of at least 12 characters. Several random words are preferable.
 2. Create and save entries. The entry list shows the name, website, and associated username or email. Hover over a shortened value to see it in full. Search matches entry names, websites, and usernames or emails.
-3. Passwords are masked by default. Copying sets a 20-second expiry; a subsequent clipboard change is preserved, including a copy of identical text.
+3. Passwords are masked by default. Use the **Copy** button to copy a password with history/sync exclusion flags and a 20-second expiry; direct text-box copy/cut is blocked even while the password is revealed. A subsequent clipboard change is preserved, including a copy of identical text.
 4. Save an encrypted backup to a new filename and retain it separately from the active device.
 5. Lock manually or close the window to exit. The vault also locks after five minutes without input in the app, on Windows session lock/disconnect, and on suspend/resume.
 
@@ -83,6 +83,7 @@ See [the project plan](PROJECT_PLAN.md) and [vault format specification](docs/VA
 - .NET strings and framework controls can retain immutable plaintext copies. The app clears its fields and owned mutable buffers, but cannot guarantee complete memory erasure or protection from swap, hibernation, or crash dumps.
 - Clipboard exclusion flags request that Windows omit password copies from history and cloud sync. Third-party clipboard tools may ignore them. A busy clipboard is retried while the app stays open; exit cannot guarantee cleanup if another process keeps the clipboard locked.
 - Automatic previous versions and backups may retain deleted entries and older passphrases. Their confidentiality depends on the passphrase protecting each copy. There is no promise of secure SSD deletion or rollback detection.
+- Changing the master passphrase also rotates the data-encryption key. After upgrading from an earlier build, change the passphrase to separate future saves from keys recoverable through older backups. If an old backup may be compromised and you restore it, change the passphrase again afterward. Rotation cannot protect secrets already present in a stolen backup.
 - Local filesystem permissions are inherited from the selected directory. Store vaults in a directory restricted to your Windows account.
 - File corruption, a wrong passphrase, or unsupported formats never trigger a reset or automatic overwrite.
 

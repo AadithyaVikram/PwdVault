@@ -7,7 +7,7 @@ public sealed class VaultSession : IDisposable
 {
     internal byte[] Header { get; private set; }
     internal byte[] WrappedKey { get; private set; }
-    internal byte[] Key { get; }
+    internal byte[] Key { get; private set; }
     private readonly List<VaultEntry> _entries;
     private bool _disposed;
     public IReadOnlyList<VaultEntry> Entries => _entries.AsReadOnly();
@@ -38,7 +38,9 @@ public sealed class VaultSession : IDisposable
     public void ChangePassphrase(string passphrase)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        (Header, WrappedKey) = VaultCodec.Rewrap(this, passphrase);
+        var rotated = VaultCodec.RotateKey(this, passphrase);
+        CryptographicOperations.ZeroMemory(Key);
+        (Header, WrappedKey, Key) = rotated;
     }
 
     public void Dispose()

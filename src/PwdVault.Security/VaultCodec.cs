@@ -81,12 +81,15 @@ public static class VaultCodec
         finally { CryptographicOperations.ZeroMemory(plaintext); }
     }
 
-    internal static (byte[] Header, byte[] Wrapped) Rewrap(VaultSession session, string passphrase)
+    internal static (byte[] Header, byte[] Wrapped, byte[] Key) RotateKey(VaultSession session, string passphrase)
     {
         ValidateNewPassphrase(passphrase);
         byte[] header = (byte[])session.Header.Clone();
         RandomNumberGenerator.Fill(header.AsSpan(28, 16));
-        return (header, Wrap(session.Key, passphrase, header));
+        // An old backup and its passphrase must not expose future payloads.
+        byte[] key = RandomNumberGenerator.GetBytes(32);
+        try { return (header, Wrap(key, passphrase, header), key); }
+        catch { CryptographicOperations.ZeroMemory(key); throw; }
     }
 
     private static byte[] Wrap(byte[] key, string passphrase, byte[] header)
