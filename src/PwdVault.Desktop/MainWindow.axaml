@@ -86,7 +86,8 @@
           <TextBox Text="{Binding Username, Mode=TwoWay}" MaxLength="4096" PlaceholderText="Username or email" />
           <TextBlock Text="PASSWORD" Classes="label" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <TextBox Text="{Binding Password, Mode=TwoWay}" PasswordChar="{Binding PasswordMask}" MaxLength="4096" PlaceholderText="Password" />
+            <TextBox Text="{Binding Password, Mode=TwoWay}" PasswordChar="{Binding PasswordMask}" MaxLength="4096" PlaceholderText="Password"
+                     CopyingToClipboard="PasswordClipboardRequested" CuttingToClipboard="PasswordClipboardRequested" />
             <Button Grid.Column="1" Content="Copy" Click="CopyClicked" />
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="18">

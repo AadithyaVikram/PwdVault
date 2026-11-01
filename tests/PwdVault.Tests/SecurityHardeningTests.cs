@@ -12,6 +12,50 @@ namespace PwdVault.Tests;
 public sealed class SecurityHardeningTests
 {
     [Fact]
+    public void OldBackupKeyCannotDecryptEntriesSavedAfterPassphraseChange()
+    {
+        const string oldPassphrase = "synthetic old master passphrase";
+        const string newPassphrase = "synthetic new master passphrase";
+        using var session = VaultCodec.Create(oldPassphrase);
+        byte[] backup = session.Encrypt();
+        using var argon = new Argon2id(Encoding.UTF8.GetBytes(oldPassphrase))
+        { Salt = backup[28..44], MemorySize = 65536, Iterations = 3, DegreeOfParallelism = 1 };
+        byte[] wrappingKey = argon.GetBytes(32), oldKey = new byte[32];
+        try
+        {
+            using (var aes = new AesGcm(wrappingKey, 16))
+                aes.Decrypt(backup.AsSpan(60, 12), backup.AsSpan(72, 32), backup.AsSpan(104, 16), oldKey, backup.AsSpan(0, 60));
+            session.ChangePassphrase(newPassphrase);
+            session.Upsert(new VaultEntry { Title = "Added after rotation", Password = "new synthetic secret" });
+            byte[] current = session.Encrypt();
+            byte[] plaintext = new byte[current.Length - VaultCodec.PayloadOffset - 16];
+            try
+            {
+                using var aes = new AesGcm(oldKey, 16);
+                Assert.Throws<AuthenticationTagMismatchException>(() => aes.Decrypt(
+                    current.AsSpan(120, 12), current.AsSpan(VaultCodec.PayloadOffset, plaintext.Length),
+                    current.AsSpan(current.Length - 16, 16), plaintext, current.AsSpan(0, VaultCodec.PayloadOffset)));
+            }
+            finally { CryptographicOperations.ZeroMemory(plaintext); }
+            using var reopened = VaultCodec.Unlock(current, newPassphrase);
+            Assert.Equal("new synthetic secret", Assert.Single(reopened.Entries).Password);
+            Assert.Equal(backup[44..60], current[44..60]);
+        }
+        finally { CryptographicOperations.ZeroMemory(wrappingKey); CryptographicOperations.ZeroMemory(oldKey); }
+    }
+
+    [Fact]
+    public void FailedPassphraseRotationLeavesOriginalSessionUsable()
+    {
+        const string passphrase = "synthetic original passphrase";
+        using var session = VaultCodec.Create(passphrase);
+        session.Upsert(new VaultEntry { Title = "Original entry" });
+        Assert.Throws<ArgumentException>(() => session.ChangePassphrase("invalid surrogate passphrase " + '\ud800'));
+        using var reopened = VaultCodec.Unlock(session.Encrypt(), passphrase);
+        Assert.Equal("Original entry", Assert.Single(reopened.Entries).Title);
+    }
+
+    [Fact]
     public void Argon2idMatchesRfc9106Section53()
     {
         // Independent published known-answer vector, not an encrypt/decrypt round trip.

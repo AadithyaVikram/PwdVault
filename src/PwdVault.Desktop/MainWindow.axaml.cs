@@ -145,6 +145,13 @@ public partial class MainWindow : Window
         catch { _vm.Status = "Could not copy the password. The clipboard may be busy; try again."; }
     }
 
+    private void PasswordClipboardRequested(object? sender, RoutedEventArgs e)
+    {
+        // Revealing a password must not enable the framework's unprotected clipboard path.
+        e.Handled = true;
+        _vm.Status = "Use the Copy button to copy the password with clipboard protection and automatic expiry.";
+    }
+
     private async void GenerateClicked(object? sender, RoutedEventArgs e)
     {
         var length = new NumericUpDown { Minimum = 8, Maximum = 256, Value = 24, Increment = 1 };

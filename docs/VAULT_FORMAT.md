@@ -26,7 +26,7 @@ The file must end exactly after the payload tag. The encrypted payload is limite
 
 Accepted Argon2 inputs are memory 19,456 to 262,144 KiB, iterations 2 to 10, parallelism 1 to 4, and memory times iterations at most 786,432 KiB-passes. These bounds mitigate malicious resource requests; they do not make weak master passphrases safe. The initial 64 MiB / 3 / 1 settings are provisional, not a hardware calibration system. Unlock timing must be assessed on minimum supported hardware before release.
 
-A passphrase change generates a new salt and wrapping nonce and re-encrypts the data key, followed by a fresh payload encryption. It preserves the data key and vault identifier. Old copies and backups retain their prior passphrase and entries. A stolen old copy is not revoked by changing the passphrase.
+A passphrase change generates a new random data key, salt, and wrapping nonce, followed by a fresh payload encryption. It preserves the vault identifier. An old backup's data key cannot decrypt payloads saved after this rotation. Old copies and backups retain their prior passphrase and entries; rotation cannot revoke data already exposed in those copies. Restoring an old backup restores its key and passphrase, so change the passphrase again after restoring a potentially compromised backup. Version 1 files remain compatible; earlier app builds changed only the wrapping key and did not rotate the data key.
 
 The engine authenticates the wrapped key before attempting to decrypt the payload. Entries are exposed only after both tags and payload validation succeed. Authenticated encryption does not detect replay of an older valid file.
 
